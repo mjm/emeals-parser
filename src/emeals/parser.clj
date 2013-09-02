@@ -46,9 +46,11 @@
 
 (defn assemble-instructions [instr]
   (let [instructions (rest instr)]
-    (string/join " " (cons (str (first instructions)
-                                (second instructions))
-                           (drop 2 instructions)))))
+    (string/join "\n"
+                 (string/split (string/join " " (cons (str (first instructions)
+                                                           (second instructions))
+                                                      (drop 2 instructions)))
+                               #"\. "))))
 
 (defn flatten-ingredients [ingreds]
   (if (empty? ingreds)
