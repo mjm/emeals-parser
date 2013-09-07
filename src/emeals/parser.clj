@@ -264,8 +264,9 @@ pan. Bake 20 minutes or until just tender.
 
 (defn -main [& args]
   (let [parsed (parse-meals (meals-from-file (first args)))]
-    (json/pprint parsed :escape-slash false)
-    ;(clojure.pprint/pprint parsed)
-    )
-  (flush)
-  (shutdown-agents))
+    (try
+      (json/pprint parsed :escape-slash false)
+      ;(clojure.pprint/pprint parsed)
+      (finally
+        (flush)
+        (shutdown-agents)))))
