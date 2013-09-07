@@ -142,7 +142,7 @@
 
 (defn assemble-meal [meal]
   (if (map? meal)
-    (do (clojure.pprint/pprint meal *err*) nil)
+    [:failures (with-out-str (clojure.pprint/pprint meal))]
     (let [meal-map (mapify (rest meal))
           flags (assemble-header (:header meal-map))
           names (assemble-names (:names meal-map))
@@ -155,10 +155,15 @@
           instructions (map assemble-instructions (filter #(= (first %) :instructions) (rest meal)))
           entree-instructions (first instructions)
           side-instructions (second instructions)]
-      {:flags flags
-       :times times
-       :entree {:name entree-name :ingredients entree-ingredients :instructions entree-instructions}
-       :side {:name side-name :ingredients side-ingredients :instructions side-instructions}})))
+      [:successes
+       {:flags flags
+        :times times
+        :entree {:name entree-name
+                 :ingredients entree-ingredients
+                 :instructions entree-instructions}
+        :side {:name side-name
+               :ingredients side-ingredients
+               :instructions side-instructions}}])))
 
 (defn copy-to-tempfile [menu]
   (let [tempfile (java.io.File/createTempFile "menu" ".pdf")
@@ -205,7 +210,13 @@
   (extract-meals (convert-to-text (copy-to-tempfile file))))
 
 (defn parse-meals [meals]
-  (map #(assemble-meal (meal-parser %)) meals))
+  (reduce (fn [assembled-meals next-meal]
+            (let [[indicator result] (assemble-meal (meal-parser next-meal))]
+              (assoc assembled-meals
+                     indicator
+                     (conj (indicator assembled-meals) result))))
+          {:failures [] :successes []}
+          meals))
 
 (def sample-meal
 "Meal 7
@@ -266,7 +277,6 @@ pan. Bake 20 minutes or until just tender.
   (let [parsed (parse-meals (meals-from-file (first args)))]
     (try
       (json/pprint parsed :escape-slash false)
-      ;(clojure.pprint/pprint parsed)
       (finally
         (flush)
         (shutdown-agents)))))
